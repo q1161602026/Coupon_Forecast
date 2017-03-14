@@ -21,6 +21,5 @@ def train_test_split():
 	for k,x in enumerate([dataset1,dataset2,test_dataset]):
 		x.to_csv(processed_dataset_path[k],index=None)
 
-
 if __name__ == '__main__':
 	train_test_split()

@@ -55,8 +55,9 @@ def extract_user_feature(feature_file_path,num):
 	user.user_notuse_coupon_count = user.user_notuse_coupon_count.replace(np.nan,0)
 	user.user_buy_use_coupon_count = user.user_buy_use_coupon_count.replace(np.nan,0)
 	user.user_buy_use_coupon_rate = user.user_buy_use_coupon_rate.replace(np.nan,0)
+	user.drop_duplicates(inplace=True)
 	user.to_csv('data/user{0}.csv'.format(num),index=None)
-
+	
 if __name__ == '__main__':
 	for k,path in enumerate(processed_feature_path):
     	extract_user_feature(path,k+1)

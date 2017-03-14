@@ -1,6 +1,5 @@
 #!/usr/bin/python 
 #-*- coding: UTF-8 -*-   
-
 import pandas as pd
 import numpy as np
 from config import *
@@ -28,6 +27,9 @@ def extract_merchant_feature(feature_file_path,num):
 
 	# 商家被核销优惠券中的平均/最小/最大用户-商家距离
 	t4,t5,t6 = merchant_coupon_distance_count(feature)
+	
+	# 商家被核销优惠券天数
+	t9,t10,t11=merchant_date_datereceived_gap(feature)
 
 	# 商家每种优惠券核销多少张
 	# t7 = merchant_discount_type_used_count(feature)
@@ -38,6 +40,9 @@ def extract_merchant_feature(feature_file_path,num):
 	merchant = pd.merge(merchant,t4,on='Merchant_id',how='left')
 	merchant = pd.merge(merchant,t5,on='Merchant_id',how='left')
 	merchant = pd.merge(merchant,t6,on='Merchant_id',how='left')
+	merchant = pd.merge(merchant,t9,on='Merchant_id',how='left')
+	merchant = pd.merge(merchant,t10,on='Merchant_id',how='left')
+	merchant = pd.merge(merchant,t11,on='Merchant_id',how='left')
 	# merchant=pd.merge(merchant,t7,on='Merchant_id',how='left')
 
 	# # 商家被核销过的不同优惠券占所有核销领数量取的过的不同优惠券数量比重

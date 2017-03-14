@@ -49,6 +49,11 @@ def use_coupon_within_15days(x):
 	else:
 		return 0
 
+def get_label(x):
+    if (x['Date']=='null')|(x['Date_received']=='null'):
+        return 0
+    else:
+    	return use_coupon_within_15days(x)
 
 def user_notuse_coupon_count(feature):
 	# 用户领取该优惠券15天不核销次数
@@ -117,6 +122,30 @@ def user_discount_type_use_count(feature):
 	print '用户满0~50/50~200/200~500减的优惠券核销数提取'
 	return t4
 
+def user_this_month_all_coupon_count(dataset):
+	# 用户该月收到coupon数
+	t1 = dataset
+	t1['Coupon_id'] = t1['Coupon_id'].astype('str')
+	t1 = t1[t1['Coupon_id']!='null']
+	t1 = t1[['User_id']]
+	t1['user_this_month_all_coupon_count'] = 1
+	t1 = t1.groupby('User_id').agg('sum').reset_index()
+	print '用户该月收到coupon数提取'
+	return t1
+
+
+def user_this_day_all_coupon_count(dataset):
+	# 用户该天收到coupon数
+	t1 = dataset
+	t1['Coupon_id'] = t1['Coupon_id'].astype('str')
+	t1 = t1[t1['Coupon_id']!='null']
+	t1 = t1[['User_id','Date_received']]
+	t1['user_this_day_all_coupon_count'] = 1
+	t1 = t1.groupby(['User_id','Date_received']).agg('sum').reset_index()
+	print '用户该天收到coupon数提取'
+	return t1
+
+
 def user_merchant_use_coupon_distance(feature):
 
 	# 用户核销优惠券中的平均/最大/最小用户-商家距离
@@ -151,6 +180,22 @@ def get_user_date_datereceived_gap(s):
     return (date(int(s.Date[0:4]),int(s.Date[4:6]),int(s.Date[6:8])) - date(int(s.Date_received[0:4]),int(s.Date_received[4:6]),int(s.Date_received[6:8]))).days
 
 
+def merchant_date_datereceived_gap(feature):
+	t10 = feature[(feature.Date_received!='null')&(feature.Date!='null')][['Merchant_id','Date_received','Date']]
+
+	t10['merchant_date_datereceived_gap'] = t10.apply(get_user_date_datereceived_gap,axis=1)
+	t10 = t10[['Merchant_id','merchant_date_datereceived_gap']]
+
+	t11 = t10.groupby('Merchant_id').agg('mean').reset_index()
+	t11.rename(columns={'merchant_date_datereceived_gap':'avg_merchant_date_datereceived_gap'},inplace=True)
+	t12 = t10.groupby('Merchant_id').agg('min').reset_index()
+	t12.rename(columns={'merchant_date_datereceived_gap':'min_merchant_date_datereceived_gap'},inplace=True)
+	t13 = t10.groupby('Merchant_id').agg('max').reset_index()
+	t13.rename(columns={'merchant_date_datereceived_gap':'max_merchant_date_datereceived_gap'},inplace=True)
+	print '商家核销天数提取'
+	return t11,t12,t13
+
+
 def user_date_datereceived_gap(feature):
 	t10 = feature[(feature.Date_received!='null')&(feature.Date!='null')][['User_id','Date_received','Date']]
 	t10['user_date_datereceived_gap'] = t10.apply(get_user_date_datereceived_gap,axis=1)
@@ -162,6 +207,20 @@ def user_date_datereceived_gap(feature):
 	t12.rename(columns={'user_date_datereceived_gap':'min_user_date_datereceived_gap'},inplace=True)
 	t13 = t10.groupby('User_id').agg('max').reset_index()
 	t13.rename(columns={'user_date_datereceived_gap':'max_user_date_datereceived_gap'},inplace=True)
+	print '用户核销天数提取'
+	return t11,t12,t13
+
+def coupon_date_datereceived_gap(feature):
+	t10 = feature[(feature.Date_received!='null')&(feature.Date!='null')][['Coupon_id','Date_received','Date']]
+	t10['coupon_date_datereceived_gap'] = t10.apply(get_user_date_datereceived_gap,axis=1)
+	t10 = t10[['Coupon_id','coupon_date_datereceived_gap']]
+
+	t11 = t10.groupby('Coupon_id').agg('mean').reset_index()
+	t11.rename(columns={'coupon_date_datereceived_gap':'avg_coupon_date_datereceived_gap'},inplace=True)
+	t12 = t10.groupby('Coupon_id').agg('min').reset_index()
+	t12.rename(columns={'coupon_date_datereceived_gap':'min_coupon_date_datereceived_gap'},inplace=True)
+	t13 = t10.groupby('Coupon_id').agg('max').reset_index()
+	t13.rename(columns={'coupon_date_datereceived_gap':'max_coupon_date_datereceived_gap'},inplace=True)
 	print '用户核销天数提取'
 	return t11,t12,t13
 
