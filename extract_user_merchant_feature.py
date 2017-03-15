@@ -14,6 +14,9 @@ def extract_user_merchant_feature(feature_file_path,num):
 	user_merchant = feature[['User_id','Merchant_id']]
 	user_merchant.drop_duplicates(inplace=True)
 
+	# 用户与该商家的交易次数
+	t0 = user_merchant_count(feature)
+
 	# 用户领取该商家的所有优惠券个数
 	t1 = user_merchant_received_count(feature)
 
@@ -23,7 +26,7 @@ def extract_user_merchant_feature(feature_file_path,num):
 	# 用户15天总的核销次数(no)
 	t5 = user_buy_use_coupon_count(feature)
 
-
+	user_merchant = pd.merge(user_merchant,t0,on=['User_id','Merchant_id'],how='left')
 	user_merchant = pd.merge(user_merchant,t1,on=['User_id','Merchant_id'],how='left')
 	user_merchant = pd.merge(user_merchant,t2,on=['User_id','Merchant_id'],how='left')
 	user_merchant = pd.merge(user_merchant,t5,on=['User_id'],how='left')
@@ -36,9 +39,13 @@ def extract_user_merchant_feature(feature_file_path,num):
 	user_merchant.loc[:,'user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate'] = user_merchant.apply(cal_user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate,axis=1)
 	print '用户对每个商家的核销次数占用户总的核销次数的比重提取'
 
-	user_merchant = user_merchant[['User_id','Merchant_id','user_merchant_received_count','user_merchant_buy_use_coupon_count','user_merchant_buy_use_coupon_rate','user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate']]
+	user_merchant = user_merchant[['User_id','Merchant_id','user_merchant_count','user_merchant_received_count','user_merchant_buy_use_coupon_count','user_merchant_buy_use_coupon_rate','user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate']]
 	user_merchant.user_merchant_received_count = user_merchant.user_merchant_received_count.replace(np.nan,0)
+	user_merchant.user_merchant_received_count = user_merchant.user_merchant_received_count.astype('int')
+	user_merchant.user_merchant_count = user_merchant.user_merchant_count.replace(np.nan,0)
+	user_merchant.user_merchant_count = user_merchant.user_merchant_count.astype('int')
 	user_merchant.user_merchant_buy_use_coupon_count = user_merchant.user_merchant_buy_use_coupon_count.replace(np.nan,0)
+	user_merchant.user_merchant_buy_use_coupon_count = user_merchant.user_merchant_buy_use_coupon_count.astype('int')
 	user_merchant.user_merchant_buy_use_coupon_rate = user_merchant.user_merchant_buy_use_coupon_rate.replace(np.nan,0)
 	user_merchant.user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate = user_merchant.user_merchant_buy_use_coupon_of_user_buy_use_coupon_rate.replace(np.nan,0)
 

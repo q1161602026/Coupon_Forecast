@@ -42,18 +42,50 @@ def cal_merchant_discount_type_used_rate(x):
 	return 1.0*x['merchant_discount_type_used_count']/x['merchant_coupon_count']
 
 
+def user_each_rate_discount_rate(feature):
+	t1 = feature[['User_id','Discount_rate','Date','Date_received']]
+	t1 = t1[t1['Discount_rate']!='null']
+	t1['discount_man'] = t1.Discount_rate.apply(get_discount_man)
+	t1['discount_jian'] = t1.Discount_rate.apply(get_discount_jian)
+	t1['is_man_jian'] = t1.Discount_rate.apply(is_man_jian)
+	t1['Discount_rate'] = t1.Discount_rate.apply(calc_discount_rate)
+	t1 = t1[['User_id','Discount_rate','Date','Date_received']]
+	t1.loc[:,'user_each_rate_discount_count'] = 1
+	t1.loc[:,'user_buy_count'] = t1.apply(use_coupon_within_15days,axis=1)
+	t1 = t1.groupby(['User_id','Discount_rate']).agg('sum').reset_index()
+	t1.loc[:,'user_each_rate_discount_rate']=t1['user_buy_count']/t1['user_each_rate_discount_count']
+	t1.drop(['user_buy_count','user_buy_count'],axis=1,inplace=True)
+	print '该用户对不同折扣率的交易率提取'
+	return t1
+
+
+def user_buy_count(feature):
+	# 该用户的所有交易次数
+	t1 = feature[feature.Date!='null'][['User_id']]
+	t1['user_buy_count'] = 1
+	t1 = t1.groupby('User_id').agg('sum').reset_index()
+	print '该用户的所有交易次数提取'
+	return t1
+
+
 def use_coupon_within_15days(x):
+	x['Date_received'] = str(x['Date_received'])
+	x['Date'] = str(x['Date'])
+	if x['Date']=='null':
+		return 0
 	days=(date(int(x['Date'][0:4]),int(x['Date'][4:6]),int(x['Date'][6:8]))-date(int(x['Date_received'][0:4]),int(x['Date_received'][4:6]),int(x['Date_received'][6:8]))).days
+	
 	if days < 16:
 		return 1
 	else:
 		return 0
 
 def get_label(x):
-    if (x['Date']=='null')|(x['Date_received']=='null'):
-        return 0
-    else:
-    	return use_coupon_within_15days(x)
+	x['Date_received'] = str(x['Date_received'])
+	if (x['Date']=='null')|(x['Date_received']=='null'):
+		return 0
+	else:
+		return use_coupon_within_15days(x)
 
 def user_notuse_coupon_count(feature):
 	# 用户领取该优惠券15天不核销次数
@@ -124,7 +156,7 @@ def user_discount_type_use_count(feature):
 
 def user_this_month_all_coupon_count(dataset):
 	# 用户该月收到coupon数
-	t1 = dataset
+	t1 = dataset[['User_id','Coupon_id']]
 	t1['Coupon_id'] = t1['Coupon_id'].astype('str')
 	t1 = t1[t1['Coupon_id']!='null']
 	t1 = t1[['User_id']]
@@ -132,6 +164,36 @@ def user_this_month_all_coupon_count(dataset):
 	t1 = t1.groupby('User_id').agg('sum').reset_index()
 	print '用户该月收到coupon数提取'
 	return t1
+
+def user_this_month_same_coupon_count(dataset):
+	# 用户该月收到相同coupon数
+	t = dataset[['User_id','Coupon_id','Date_received']]
+	t['Coupon_id'] = t['Coupon_id'].astype('str')
+	t = t[t['Coupon_id']!='null']
+
+	t1 = t[['User_id','Coupon_id']]
+	t1['user_this_month_same_coupon_count'] = 1
+	t1 = t1.groupby(['User_id','Coupon_id']).agg('sum').reset_index()
+
+	t2 = t[['User_id','Coupon_id','Date_received']]
+	t2 = t2.groupby(['User_id','Coupon_id']).agg('max').reset_index()
+	t2.rename(columns={'Date_received':'Date_received_max'},inplace=True)
+
+	t3 = t[['User_id','Coupon_id','Date_received']]
+	t3 = t3.groupby(['User_id','Coupon_id']).agg('min').reset_index()
+	t3.rename(columns={'Date_received':'Date_received_min'},inplace=True)
+
+	t4 = pd.merge(t,t1,on=['User_id','Coupon_id'],how='left')
+	t4 = pd.merge(t4,t2,on=['User_id','Coupon_id'],how='left')
+	t4 = pd.merge(t4,t3,on=['User_id','Coupon_id'],how='left')
+
+
+	t4.loc[:,'user_coupon_first'] = t4.apply(lambda x:1 if (x['Date_received_max']!=x['Date_received_min'])&(x['Date_received']==x['Date_received_min']) else 0,axis=1)
+	t4.loc[:,'user_coupon_last'] = t4.apply(lambda x:1 if (x['Date_received_max']!=x['Date_received_min'])&(x['Date_received']==x['Date_received_max']) else 0,axis=1)
+	t4 = t4[['User_id','Coupon_id','user_this_month_same_coupon_count','user_coupon_first','user_coupon_last']] 
+
+	print '用户该月收到相同coupon数提取'
+	return t4
 
 
 def user_this_day_all_coupon_count(dataset):
@@ -145,6 +207,16 @@ def user_this_day_all_coupon_count(dataset):
 	print '用户该天收到coupon数提取'
 	return t1
 
+def user_this_day_same_coupon_count(dataset):
+	# 用户该天收到相同coupon数
+	t1 = dataset
+	t1['Coupon_id'] = t1['Coupon_id'].astype('str')
+	t1 = t1[t1['Coupon_id']!='null']
+	t1 = t1[['User_id','Coupon_id','Date_received']]
+	t1['user_this_day_same_coupon_count'] = 1
+	t1 = t1.groupby(['User_id','Coupon_id','Date_received']).agg('sum').reset_index()
+	print '用户该天收到相同coupon数提取'
+	return t1
 
 def user_merchant_use_coupon_distance(feature):
 
@@ -164,16 +236,23 @@ def user_merchant_use_coupon_distance(feature):
 
 	t8 = temp.agg('mean').reset_index()
 	t8.rename(columns={'Distance':'user_mean_distance'},inplace=True)
-	print '用户核销距离提取'
+	print '用户核销平均、最大、最小距离提取'
 	return t6,t7,t8
 
-def user_merchant_count(feature):
+def user_merchants_count(feature):
 	t1 = feature[feature.Date!='null'][['User_id','Merchant_id']]
 	t1.drop_duplicates(inplace=True)
 	t1.Merchant_id = 1
 	t1 = t1.groupby('User_id').agg('sum').reset_index()
-	t1.rename(columns={'Merchant_id':'user_merchant_count'},inplace=True)
+	t1.rename(columns={'Merchant_id':'user_merchants_count'},inplace=True)
 	print '用户交易过的商家数提取'
+	return t1
+
+def user_merchant_count(feature):
+	t1 = feature[feature.Date!='null'][['User_id','Merchant_id']]
+	t1.loc[:,'user_merchant_count'] = 1
+	t1 = t1.groupby(['User_id','Merchant_id']).agg('sum').reset_index()
+	print '用户商家交易数提取'
 	return t1
 
 def get_user_date_datereceived_gap(s):
@@ -267,7 +346,7 @@ def merchant_coupon_notused_count(feature):
 	return t6
 
 def merchant_coupon_distance_count(feature):
-	# 商家被核销优惠券中的平均/最小/最大用户-商家距离
+	# 商家被核销优惠券中的平均、最小、最大用户-商家距离
 
 	t5 = feature[(feature['Coupon_id']!='null')&(feature['Date']!='null')&(feature['Distance']!='null')]
 	t5.loc[:,'user_use_coupon'] = t5.apply(use_coupon_within_15days,axis=1)
@@ -284,7 +363,8 @@ def merchant_coupon_distance_count(feature):
 
 	t8 = temp.agg('mean').reset_index()
 	t8.rename(columns={'Distance':'merchant_mean_distance'},inplace=True)
-	print '商家被核销优惠券中的平均/最小/最大用户-商家距离'
+	
+	print '商家被核销优惠券中的平均/最小/最大用户-商家距离提取'
 	return t6,t7,t8
 
 
