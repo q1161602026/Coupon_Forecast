@@ -65,16 +65,16 @@ consume_time_limit = 15
 
 feature_split_by_time1={
 	'feature_start_time' : '20160101',
-	'feature_end_time' : '20160413'
+	'feature_end_time' : '20160301'
 }
 
 feature_split_by_time2={
 	'feature_start_time' : '20160201',
-	'feature_end_time' : '20160514'
+	'feature_end_time' : '20160401'
 }
 
 feature_test={
-	'feature_start_time' : '20160315',
+	'feature_start_time' : '20160430',
 	'feature_end_time' : '20160630'
 }
 
@@ -83,13 +83,13 @@ feature_train_teat_split=[feature_split_by_time1,feature_split_by_time2,feature_
 
 
 dataset_split_by_time1={
-	'dataset_start_time' : '20160414',
-	'dataset_end_time' : '20160514'
+	'dataset_start_time' : '20160302',
+	'dataset_end_time' : '20160331'
 }
 
 dataset_split_by_time2={
-	'dataset_start_time' : '20160515',
-	'dataset_end_time' : '20160615'
+	'dataset_start_time' : '20160402',
+	'dataset_end_time' : '20160430'
 }
 
 dataset_test={
